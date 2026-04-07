@@ -3,6 +3,7 @@ USE seckill_system;
 
 DROP TABLE IF EXISTS tb_order;
 DROP TABLE IF EXISTS tb_seckill_order_record;
+DROP TABLE IF EXISTS tb_inventory_deduct_record;
 DROP TABLE IF EXISTS tb_inventory;
 DROP TABLE IF EXISTS tb_product;
 DROP TABLE IF EXISTS tb_user;
@@ -48,7 +49,8 @@ CREATE TABLE tb_order (
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_user_id (user_id),
-    KEY idx_order_no (order_no)
+    KEY idx_order_no (order_no),
+    KEY idx_status (status)
 );
 
 CREATE TABLE tb_seckill_order_record (
@@ -59,6 +61,16 @@ CREATE TABLE tb_seckill_order_record (
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_user_product (user_id, product_id),
     UNIQUE KEY uk_order_id (order_id)
+);
+
+CREATE TABLE tb_inventory_deduct_record (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    order_id BIGINT NOT NULL UNIQUE,
+    product_id BIGINT NOT NULL,
+    quantity INT NOT NULL,
+    status TINYINT NOT NULL DEFAULT 0,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 INSERT INTO tb_product(product_name, price, status) VALUES ('示例商品A', 99.00, 1);

@@ -1,6 +1,7 @@
 package com.example.seckill.order.controller;
 
 import com.example.seckill.common.ApiResponse;
+import com.example.seckill.order.dto.PaymentSubmitResponse;
 import com.example.seckill.order.dto.SeckillOrderRequest;
 import com.example.seckill.order.dto.SeckillSubmitResponse;
 import com.example.seckill.order.entity.Order;
@@ -29,6 +30,11 @@ public class OrderController {
     @PostMapping("/seckill")
     public ApiResponse<SeckillSubmitResponse> submitSeckillOrder(@Valid @RequestBody SeckillOrderRequest request) {
         return ApiResponse.success(orderService.submitSeckillOrder(request));
+    }
+
+    @PostMapping("/{orderId}/pay")
+    public ApiResponse<PaymentSubmitResponse> payOrder(@PathVariable Long orderId) {
+        return ApiResponse.success(orderService.payOrder(orderId));
     }
 
     @GetMapping("/{orderId}")

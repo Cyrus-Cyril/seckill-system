@@ -1,8 +1,6 @@
 package com.example.seckill.order.service;
 
-import com.example.seckill.order.messaging.SeckillOrderMessage;
-import com.example.seckill.product.entity.Product;
-import com.example.seckill.product.mapper.ProductMapper;
+import com.example.seckill.order.messaging.OrderCreateCommand;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -10,38 +8,16 @@ import org.springframework.stereotype.Component;
 public class SeckillOrderConsumer {
 
     private final OrderService orderService;
-    private final ProductMapper productMapper;
+    private final KafkaMessagePublisher kafkaMessagePublisher;
 
-    public SeckillOrderConsumer(OrderService orderService,
-                                ProductMapper productMapper) {
+    public SeckillOrderConsumer(OrderService orderService, KafkaMessagePublisher kafkaMessagePublisher) {
         this.orderService = orderService;
-        this.productMapper = productMapper;
+        this.kafkaMessagePublisher = kafkaMessagePublisher;
     }
 
-    @KafkaListener(topics = "${seckill.kafka.topic}", groupId = "${spring.kafka.consumer.group-id}")
-    public void consume(SeckillOrderMessage message) {
-        Product product = productMapper.findById(message.getProductId());
-        if (product == null) {
-            orderService.rollbackReservation(
-                    message.getUserId(),
-                    message.getProductId(),
-                    message.getOrderId(),
-                    message.getQuantity()
-            );
-            return;
-        }
-
-        OrderService.ProcessResult result = orderService.createSeckillOrder(message, product);
-        if (result == OrderService.ProcessResult.OUT_OF_STOCK) {
-            orderService.rollbackReservation(
-                    message.getUserId(),
-                    message.getProductId(),
-                    message.getOrderId(),
-                    message.getQuantity()
-            );
-            return;
-        }
-
-        orderService.markOrderCreated(message.getUserId(), message.getProductId(), message.getOrderId());
+    @KafkaListener(topics = "${seckill.kafka.order-create-topic}", groupId = "${spring.kafka.consumer.group-id}")
+    public void consume(String payload) {
+        OrderCreateCommand command = kafkaMessagePublisher.read(payload, OrderCreateCommand.class);
+        orderService.createPendingOrder(command);
     }
 }

@@ -3,7 +3,9 @@ package com.example.seckill.order.mapper;
 import com.example.seckill.order.entity.Order;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
@@ -39,4 +41,23 @@ public interface OrderMapper {
         ORDER BY create_time DESC
         """)
     List<Order> findByUserId(Long userId);
+
+    @Update("""
+        UPDATE tb_order
+        SET status = #{newStatus},
+            update_time = NOW()
+        WHERE id = #{orderId}
+          AND status = #{expectedStatus}
+        """)
+    int updateStatus(@Param("orderId") Long orderId,
+                     @Param("expectedStatus") Integer expectedStatus,
+                     @Param("newStatus") Integer newStatus);
+
+    @Update("""
+        UPDATE tb_order
+        SET status = #{status},
+            update_time = NOW()
+        WHERE id = #{orderId}
+        """)
+    int forceUpdateStatus(@Param("orderId") Long orderId, @Param("status") Integer status);
 }
