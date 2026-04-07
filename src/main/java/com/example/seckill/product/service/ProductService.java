@@ -30,7 +30,6 @@ public class ProductService {
         String lockKey = "product:lock:" + id;
 
         String json = stringRedisTemplate.opsForValue().get(cacheKey);
-
         if (json != null) {
             if ("null".equals(json)) {
                 return null;
@@ -42,9 +41,7 @@ public class ProductService {
             }
         }
 
-        Boolean lockSuccess = stringRedisTemplate.opsForValue()
-                .setIfAbsent(lockKey, "1", Duration.ofSeconds(10));
-
+        Boolean lockSuccess = stringRedisTemplate.opsForValue().setIfAbsent(lockKey, "1", Duration.ofSeconds(10));
         if (Boolean.TRUE.equals(lockSuccess)) {
             try {
                 String secondJson = stringRedisTemplate.opsForValue().get(cacheKey);
@@ -56,7 +53,6 @@ public class ProductService {
                 }
 
                 Product product = productMapper.findById(id);
-
                 if (product == null) {
                     stringRedisTemplate.opsForValue().set(
                             cacheKey,

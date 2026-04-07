@@ -23,6 +23,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ApiResponse<String> handleException(Exception e) {
-        return ApiResponse.fail("系统异常：" + e.getMessage());
+        return ApiResponse.fail("系统异常: " + e.getMessage());
     }
 }
