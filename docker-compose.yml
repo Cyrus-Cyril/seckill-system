@@ -1,4 +1,16 @@
 services:
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: seckill-nacos
+    environment:
+      MODE: standalone
+      NACOS_AUTH_ENABLE: "false"
+      JVM_XMS: 256m
+      JVM_XMX: 256m
+      JVM_XMN: 128m
+    ports:
+      - "8848:8848"
+
   mysql:
     image: mysql:8.4
     container_name: seckill-mysql
@@ -40,38 +52,116 @@ services:
     ports:
       - "9092:9092"
 
-  app1:
-    build: .
-    container_name: seckill-app1
+  sentinel-dashboard:
+    image: bladex/sentinel-dashboard:1.8.8
+    container_name: seckill-sentinel-dashboard
+    environment:
+      SERVER_PORT: 8858
+    ports:
+      - "8858:8858"
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    container_name: seckill-user-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      INSTANCE_ID: app1
+      NACOS_ADDR: nacos:8848
+      NACOS_USERNAME: nacos
+      NACOS_PASSWORD: nacos
     depends_on:
+      - nacos
       - mysql
-      - redis
-      - kafka
     ports:
       - "8081:8080"
 
-  app2:
-    build: .
-    container_name: seckill-app2
+  product-service:
+    build:
+      context: .
+      dockerfile: product-service/Dockerfile
+    container_name: seckill-product-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      INSTANCE_ID: app2
+      NACOS_ADDR: nacos:8848
+      NACOS_USERNAME: nacos
+      NACOS_PASSWORD: nacos
     depends_on:
+      - nacos
       - mysql
       - redis
       - kafka
     ports:
       - "8082:8080"
 
+  order-service-1:
+    build:
+      context: .
+      dockerfile: order-service/Dockerfile
+    container_name: seckill-order-service-1
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      INSTANCE_ID: order1
+      NACOS_ADDR: nacos:8848
+      NACOS_USERNAME: nacos
+      NACOS_PASSWORD: nacos
+      SENTINEL_DASHBOARD: sentinel-dashboard:8858
+    depends_on:
+      - nacos
+      - mysql
+      - redis
+      - kafka
+      - product-service
+      - sentinel-dashboard
+    ports:
+      - "8083:8080"
+
+  order-service-2:
+    build:
+      context: .
+      dockerfile: order-service/Dockerfile
+    container_name: seckill-order-service-2
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      INSTANCE_ID: order2
+      NACOS_ADDR: nacos:8848
+      NACOS_USERNAME: nacos
+      NACOS_PASSWORD: nacos
+      SENTINEL_DASHBOARD: sentinel-dashboard:8858
+    depends_on:
+      - nacos
+      - mysql
+      - redis
+      - kafka
+      - product-service
+      - sentinel-dashboard
+    ports:
+      - "8084:8080"
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    container_name: seckill-gateway
+    environment:
+      GATEWAY_PORT: 8080
+      NACOS_ADDR: nacos:8848
+      NACOS_USERNAME: nacos
+      NACOS_PASSWORD: nacos
+    depends_on:
+      - nacos
+      - user-service
+      - product-service
+      - order-service-1
+      - order-service-2
+    ports:
+      - "8088:8080"
+
   nginx:
     image: nginx:1.27-alpine
     container_name: seckill-nginx
     depends_on:
-      - app1
-      - app2
+      - gateway
     ports:
       - "80:80"
     volumes:
